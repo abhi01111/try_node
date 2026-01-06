@@ -11,7 +11,8 @@ services:
     depends_on:
       - backend
     volumes:
-      - frontend_logs:/var/log/nginx
+      - frontend_access_logs:/var/log/nginx/access
+      - frontend_error_logs:/var/log/nginx/error
     networks:
       - mern_network
 
@@ -55,7 +56,8 @@ volumes:
   mongo_data:
   mongo_logs:
   backend_logs:
-  frontend_logs:
+  frontend_access_logs:
+  frontend_error_logs:
 
 networks:
   mern_network:

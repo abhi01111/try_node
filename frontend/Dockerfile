@@ -11,7 +11,12 @@ RUN npm run build
 # Stage 2 — Serve with Nginx
 FROM nginx:alpine
 
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy our nginx.conf into the container (THIS IS THE IMPORTANT PART)
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Copy React build output
+COPY --from=build /app/build /usr/share/nginx/html
+
 EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
