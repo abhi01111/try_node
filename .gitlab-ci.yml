@@ -1,1 +1,33 @@
-ok
+stages:
+  - deploy
+
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  COMPOSE_PROJECT_NAME: mern_app
+
+before_script:
+  - docker info
+  - docker compose version
+
+deploy_dev:
+  stage: deploy
+  script:
+    - echo "Deploying to DEV environment"
+    - docker compose down || true
+    - docker compose up -d --build
+  rules:
+    - if: '$ENV == "dev"'
+  environment:
+    name: dev
+
+deploy_prod:
+  stage: deploy
+  script:
+    - echo "Deploying to PRODUCTION"
+    - docker compose down || true
+    - docker compose up -d --build
+  rules:
+    - if: '$ENV == "main"'
+  when: manual
+  environment:
+    name: production
