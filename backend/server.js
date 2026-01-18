@@ -1,17 +1,20 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import morgan from "morgan";   // ✅ ADD THIS
 
 const app = express();
 
 // --- Middleware ---
 app.use(cors());
-app.use(express.json());   // Parse JSON body
+app.use(express.json());      // Parse JSON body
+app.use(morgan("dev"));       // ✅ LOG EVERY REQUEST
 
 // --- MongoDB Connection ---
-const mongoUri = `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASS}` +
-                 `@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}` +
-                 `/${process.env.MONGO_DB}?authSource=admin`;
+const mongoUri =
+  `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASS}` +
+  `@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}` +
+  `/${process.env.MONGO_DB}?authSource=admin`;
 
 mongoose
   .connect(mongoUri)
@@ -23,15 +26,20 @@ const UserSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    trim: true
-  }
+    trim: true,
+  },
 });
 
 const User = mongoose.model("User", UserSchema);
 
 // --- Routes ---
 
-// Health check
+// ✅ Health check (FOR CURL / MONITORING)
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
+// Root route
 app.get("/", (req, res) => {
   res.json({ status: "Backend Running 👍" });
 });
@@ -42,7 +50,9 @@ app.post("/api/users", async (req, res) => {
     const { name } = req.body;
 
     if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, message: "Name is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Name is required" });
     }
 
     const user = new User({ name });
@@ -69,4 +79,6 @@ app.get("/api/users", async (req, res) => {
 // --- Start Server ---
 const PORT = process.env.NODE_PORT || 5003;
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
