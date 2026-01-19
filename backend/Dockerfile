@@ -16,8 +16,12 @@ FROM node:20-alpine
 WORKDIR /app
 COPY --from=build /app /app
 
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx
+
 EXPOSE 5003
 
 ENTRYPOINT ["sh","/app/entrypoint.sh"]
-CMD ["npm","start"]
+CMD ["node","server.js"]
 
