@@ -7,7 +7,7 @@ RUN npm ci
 
 COPY . .
 
-RU npm prune --omit=dev
+RUN npm prune --omit=dev
 
 
 
