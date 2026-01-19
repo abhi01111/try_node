@@ -1,11 +1,20 @@
-FROM node:20-alpine
+FROM node:20-alpine as build
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
+
+RU npm prune --omit=dev
+
+
+
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=build /app /app
 
 EXPOSE 5003
 
