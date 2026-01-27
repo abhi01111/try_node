@@ -92,7 +92,6 @@
 
 
 
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -113,12 +112,52 @@ app.get("/health", (req, res) => {
   res.json({ status: "Backend is running 🚀" });
 });
 
-// MongoDB
+// --------------------
+// MongoDB Connection
+// --------------------
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.error("❌ DB Error:", err));
+  .catch(err => {
+    console.error("❌ MongoDB Error:", err.message);
+    process.exit(1);
+  });
 
-// Start server
+// --------------------
+// User Schema & Model
+// --------------------
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true }
+}, { timestamps: true });
+
+const User = mongoose.model("User", userSchema);
+
+// --------------------
+// Routes
+// --------------------
+
+// Save user
+app.post("/users", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: "Name required" });
+
+    const user = await User.create({ name });
+    res.status(201).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to save user" });
+  }
+});
+
+// Get all users
+app.get("/users", async (req, res) => {
+  const users = await User.find().sort({ createdAt: -1 });
+  res.json(users);
+});
+
+// --------------------
+// Start Server
+// --------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
