@@ -61,7 +61,6 @@
 
 
 
-
 import { useState, useEffect } from "react";
 
 const API_BASE = "https://try-node-ogr4.onrender.com";
@@ -73,23 +72,24 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch(`${API_BASE}/api/users`, {
+    await fetch(`${API_BASE}/api/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",          // ✅ FIX 304
       body: JSON.stringify({ name }),
     });
 
-    const data = await res.json();
-
-    if (data.success) {
-      setName("");
-      loadUsers();
-    }
+    setName("");
+    loadUsers();                  // reload after save
   };
 
   const loadUsers = async () => {
-    const res = await fetch(`${API_BASE}/api/users`);
+    const res = await fetch(`${API_BASE}/api/users`, {
+      cache: "no-store",          // ✅ FIX 304
+    });
+
     const data = await res.json();
+    console.log("Users from API:", data); // optional debug
     setUsers(data);
   };
 
