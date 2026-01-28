@@ -91,74 +91,46 @@
 
 
 
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import morgan from "morgan";
+import User from "./models/User.js";
 
 const app = express();
 
-// Middleware
 app.use(cors({
   origin: "https://try-node-git-main-abhishek-sahanes-projects.vercel.app",
-  credentials: true
 }));
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Health check
+/* ---------------- HEALTH ---------------- */
 app.get("/health", (req, res) => {
-  res.json({ status: "Backend is running 🚀" });
+  res.json({ status: "Backend running 🚀" });
 });
 
-// --------------------
-// MongoDB Connection
-// --------------------
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => {
-    console.error("❌ MongoDB Error:", err.message);
-    process.exit(1);
-  });
-
-// --------------------
-// User Schema & Model
-// --------------------
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true }
-}, { timestamps: true });
-
-const User = mongoose.model("User", userSchema);
-
-// --------------------
-// Routes
-// --------------------
-
-// Save user
-app.post("/users", async (req, res) => {
+/* ---------------- CREATE USER ---------------- */
+app.post("/api/users", async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ error: "Name required" });
-
-    const user = await User.create({ name });
-    res.status(201).json(user);
+    const user = await User.create({ name: req.body.name });
+    res.json({ success: true, user });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to save user" });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Get all users
-app.get("/users", async (req, res) => {
+/* ---------------- GET USERS ---------------- */
+app.get("/api/users", async (req, res) => {
   const users = await User.find().sort({ createdAt: -1 });
   res.json(users);
 });
 
-// --------------------
-// Start Server
-// --------------------
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+/* ---------------- DB ---------------- */
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ Mongo Error:", err));
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
