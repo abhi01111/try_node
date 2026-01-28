@@ -90,47 +90,37 @@
 
 
 
-
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import morgan from "morgan";
-import User from "./models/User.js";
+import userRoutes from "./routes/userRoutes.js";
 
 const app = express();
 
+// middleware
 app.use(cors({
   origin: "https://try-node-git-main-abhishek-sahanes-projects.vercel.app",
 }));
 app.use(express.json());
 app.use(morgan("dev"));
 
-/* ---------------- HEALTH ---------------- */
+// routes
+app.use("/api/users", userRoutes);
+
+// health check
 app.get("/health", (req, res) => {
-  res.json({ status: "Backend running 🚀" });
+  res.json({ status: "Backend is running 🚀" });
 });
 
-/* ---------------- CREATE USER ---------------- */
-app.post("/api/users", async (req, res) => {
-  try {
-    const user = await User.create({ name: req.body.name });
-    res.json({ success: true, user });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/* ---------------- GET USERS ---------------- */
-app.get("/api/users", async (req, res) => {
-  const users = await User.find().sort({ createdAt: -1 });
-  res.json(users);
-});
-
-/* ---------------- DB ---------------- */
+// db
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ Mongo Error:", err));
+  .catch(err => console.error(err));
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+// server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
