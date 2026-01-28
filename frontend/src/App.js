@@ -63,7 +63,8 @@
 
 import { useState, useEffect } from "react";
 
-const API_BASE = "https://try-node-0gr4.onrender.com/";
+// ✅ CORRECT: NO trailing slash
+const API_BASE = "https://try-node-0gr4.onrender.com";
 
 function App() {
   const [name, setName] = useState("");
@@ -72,24 +73,26 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    await fetch(`${API_BASE}/api/users`, {
+    const res = await fetch(`${API_BASE}/api/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      cache: "no-store",          // ✅ FIX 304
+      cache: "no-store",
       body: JSON.stringify({ name }),
     });
 
+    console.log("POST status:", res.status);
+
     setName("");
-    loadUsers();                  // reload after save
+    loadUsers();
   };
 
   const loadUsers = async () => {
     const res = await fetch(`${API_BASE}/api/users`, {
-      cache: "no-store",          // ✅ FIX 304
+      cache: "no-store",
     });
 
     const data = await res.json();
-    console.log("Users from API:", data); // optional debug
+    console.log("GET users:", data);
     setUsers(data);
   };
 
@@ -121,3 +124,4 @@ function App() {
 }
 
 export default App;
+
