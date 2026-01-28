@@ -56,9 +56,15 @@
 // export default App;
 
 
+
+
+
+
+
+
 import { useState, useEffect } from "react";
 
-const API_URL = "https://try-node-ogr4.onrender.com/api/users";
+const API_BASE = "https://try-node-ogr4.onrender.com";
 
 function App() {
   const [name, setName] = useState("");
@@ -67,7 +73,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch(API_URL, {
+    const res = await fetch(`${API_BASE}/api/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -75,15 +81,14 @@ function App() {
 
     const data = await res.json();
 
-    // handle both cases (with or without success flag)
-    if (res.ok) {
+    if (data.success) {
       setName("");
       loadUsers();
     }
   };
 
   const loadUsers = async () => {
-    const res = await fetch(API_URL);
+    const res = await fetch(`${API_BASE}/api/users`);
     const data = await res.json();
     setUsers(data);
   };
@@ -101,6 +106,7 @@ function App() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter name"
+          required
         />
         <button type="submit">Save</button>
       </form>
