@@ -63,7 +63,7 @@
 
 import { useState, useEffect } from "react";
 
-const API_BASE = "https://try-node-ogr4.onrender.com";
+const API_BASE = "https://try-node-0gr4.onrender.com/";
 
 function App() {
   const [name, setName] = useState("");
