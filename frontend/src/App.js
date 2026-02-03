@@ -1,69 +1,4 @@
-// import { useState, useEffect } from "react";
-
-// function App() {
-//   const [name, setName] = useState("");
-//   const [users, setUsers] = useState([]);
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-
-//     const res = await fetch("/api/users", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ name }),
-//     });
-
-//     const data = await res.json();
-
-//     if (data.success) {
-//       setName("");
-//       loadUsers(); // refresh list
-//     }
-//   };
-
-//   const loadUsers = async () => {
-//     const res = await fetch("/api/users");
-//     const data = await res.json();
-//     setUsers(data);
-//   };
-
-//   useEffect(() => {
-//     loadUsers();
-//   }, []);
-
-//   return (
-//     <div style={{ textAlign: "center" }}>
-//       <h2>MERN App 🚀</h2>
-
-//       <form onSubmit={handleSubmit}>
-//         <input
-//           value={name}
-//           onChange={(e) => setName(e.target.value)}
-//           placeholder="Enter name"
-//         />
-//         <button type="submit">Save</button>
-//       </form>
-
-//       <h3>Stored Users</h3>
-
-//       {users.map((u, i) => (
-//         <p key={i}>{u.name}</p>
-//       ))}
-//     </div>
-//   );
-// }
-
-// export default App;
-
-
-
-
-
-
-
 import { useState, useEffect } from "react";
-
-const API_BASE = "https://try-node-0gr4.onrender.com";
 
 function App() {
   const [name, setName] = useState("");
@@ -72,26 +7,23 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch(`${API_BASE}/api/users`, {
+    const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      cache: "no-store",
       body: JSON.stringify({ name }),
     });
 
-    console.log("POST status:", res.status);
+    const data = await res.json();
 
-    setName("");
-    loadUsers();
+    if (data.success) {
+      setName("");
+      loadUsers(); // refresh list
+    }
   };
 
   const loadUsers = async () => {
-    const res = await fetch(`${API_BASE}/api/users`, {
-      cache: "no-store",
-    });
-
+    const res = await fetch("/api/users");
     const data = await res.json();
-    console.log("GET users:", data);
     setUsers(data);
   };
 
@@ -108,18 +40,86 @@ function App() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter name"
-          required
         />
         <button type="submit">Save</button>
       </form>
 
       <h3>Stored Users</h3>
 
-      {users.map((u) => (
-        <p key={u._id}>{u.name}</p>
+      {users.map((u, i) => (
+        <p key={i}>{u.name}</p>
       ))}
     </div>
   );
 }
 
 export default App;
+
+
+
+
+
+
+
+// import { useState, useEffect } from "react";
+
+// const API_BASE = "https://try-node-0gr4.onrender.com";
+
+// function App() {
+//   const [name, setName] = useState("");
+//   const [users, setUsers] = useState([]);
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     const res = await fetch(`${API_BASE}/api/users`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       cache: "no-store",
+//       body: JSON.stringify({ name }),
+//     });
+
+//     console.log("POST status:", res.status);
+
+//     setName("");
+//     loadUsers();
+//   };
+
+//   const loadUsers = async () => {
+//     const res = await fetch(`${API_BASE}/api/users`, {
+//       cache: "no-store",
+//     });
+
+//     const data = await res.json();
+//     console.log("GET users:", data);
+//     setUsers(data);
+//   };
+
+//   useEffect(() => {
+//     loadUsers();
+//   }, []);
+
+//   return (
+//     <div style={{ textAlign: "center" }}>
+//       <h2>MERN App 🚀</h2>
+
+//       <form onSubmit={handleSubmit}>
+//         <input
+//           value={name}
+//           onChange={(e) => setName(e.target.value)}
+//           placeholder="Enter name"
+//           required
+//         />
+//         <button type="submit">Save</button>
+//       </form>
+
+//       <h3>Stored Users</h3>
+
+//       {users.map((u) => (
+//         <p key={u._id}>{u.name}</p>
+//       ))}
+//     </div>
+//   );
+// }
+
+// export default App;
