@@ -101,22 +101,6 @@ pipeline {
                 }
             }
         }
-        
-        stage('Prepare Last Success Build') {
-            steps {
-                script {
-                    def prev = currentBuild.previousSuccessfulBuild
-        
-                    if (prev) {
-                        env.LAST_SUCCESS = prev.number.toString()
-                        echo "Last successful build found: ${env.LAST_SUCCESS}"
-                    } else {
-                        env.LAST_SUCCESS = ''
-                        echo "No previous successful build found (first deployment case)"
-                    }
-                }
-            }
-        }
 
         stage('Create network and Volumes') {
             steps {
@@ -201,9 +185,7 @@ pipeline {
                           -v frontend_access_logs:/var/log/nginx/access \
                           -v frontend_error_logs:/var/log/nginx/error \
                           frontend:${IMAGE_TAG}
-                          
-                        echo "Delete previos Image "
-                        docker image prune -f
+
                     "
                     '''
                 }
@@ -219,6 +201,10 @@ pipeline {
                 body: "Job=${JOB_NAME} | Build=${BUILD_NUMBER} | SUCCESS | URL=${BUILD_URL}",
                 attachLog: true
             )
+            writeFile file: 'frontend_image.txt', text: "frontend:${BUILD_NUMBER}"
+            writeFile file: 'backend_image.txt',  text: "backend:${BUILD_NUMBER}"
+
+            archiveArtifacts artifacts: '*.txt, *.tar', fingerprint: true
         }
     
         failure {
@@ -228,23 +214,48 @@ pipeline {
                 body: "Job=${JOB_NAME} | Build=${BUILD_NUMBER} | FAILED | ${BUILD_URL}",
                 attachLog: true
             )
-    
-            script {
-                if (!env.LAST_SUCCESS) {
-                    echo "No previous success build found."
-                    return
+
+            withCredentials([
+                sshUserPrivateKey(
+                    credentialsId: 'remote-ssh-key',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                ),
+                string(credentialsId: 'REMOTE-IP', variable: 'REMOTE_IP'),
+                string(credentialsId: 'mongo-user', variable: 'MONGO_USER'),
+                string(credentialsId: 'mongo-pass', variable: 'MONGO_PASS'),
+                string(credentialsId: 'mongo-db',   variable: 'MONGO_DB')
+            ]) {
+                script {
+                    def prev = currentBuild.previousSuccessfulBuild
+                    if (!prev) {
+                        echo "No previous successful build found. Rollback skipped."
+                        return
+                    }
+
+                    echo "Rolling back to build #${prev.number}"
+
+                    copyArtifacts(
+                        projectName: env.JOB_NAME,
+                        selector: specific("${prev.number}")
+                    )
+
+                    def FRONTEND_IMAGE = readFile('frontend_image.txt').trim()
+                    def BACKEND_IMAGE  = readFile('backend_image.txt').trim()
+
+                    sh """
+                    ssh -i $SSH_KEY $SSH_USER@${REMOTE_IP} '
+                        docker stop frontend backend || true
+                        docker rm frontend backend || true
+
+                        docker run -d --name backend --network app_net -p 5003:5003 -e MONGO_HOST=mongodb -e MONGO_PORT=27017 -e MONGO_USER=${MONGO_USER} -e MONGO_PASS=${MONGO_PASS} -e MONGO_DB=${MONGO_DB} -v backend_logs:/app/logs ${BACKEND_IMAGE}
+
+                        docker run -d --name frontend --network app_net -p 80:80 -v frontend_access_logs:/var/log/nginx/access -v frontend_error_logs:/var/log/nginx/error ${FRONTEND_IMAGE}
+
+                    '
+                    """
                 }
             }
-    
-            sh """
-            ssh -i $SSH_KEY $SSH_USER@${REMOTE_IP} '
-              export LAST_SUCCESS=${LAST_SUCCESS} &&
-              export MONGO_USER=${MONGO_USER} &&
-              export MONGO_PASS=${MONGO_PASS} &&
-              export MONGO_DB=${MONGO_DB} &&
-              bash /opt/docker-images/rollback.sh
-            '
-            """
         }
     }
 }
