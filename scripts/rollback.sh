@@ -1,76 +1,61 @@
 #!/bin/bash
-# ---------- CONFIG ----------
-LOG_DIR="/opt/docker-images/logs"
-LOG_FILE="$LOG_DIR/rollback.log"
+set -e
 
-mkdir -p "$LOG_DIR"
-# create Log directory to does not fail rollback dur to no directory problem
+echo "Rollback started..."
 
-# ---------- LOGGING ----------
-exec >> "$LOG_FILE" 2>&1
-# exec changes current shells output streams
-# >> “$LOG_FILE” redirects he standard output
-# 2>&1redirects standard error
+REQUIRED_VARS=("LAST_SUCCESS" "MONGO_USER" "MONGO_PASS" "MONGO_DB")
 
-echo "=================================================="
-echo "Rollback started at $(date)"
-echo "Hostname: $(hostname)"
+for VAR in "${REQUIRED_VARS[@]}"; do
+  if [ -z "${!VAR}" ]; then
+    echo "Required environment variable $VAR is missing"
+    exit 1
+  fi
+done
 
-# ---------- INPUT ----------
-CURRENT_TAG="$1"
+echo "Rolling back to last SUCCESSFUL build: $LAST_SUCCESS"
 
-if [ -z "$CURRENT_TAG" ]; then
-  echo "ERROR: CURRENT_TAG not provided"
-  exit 1
-fi
+echo "MongoDB note:"
+echo "   - MONGO_INITDB_* variables are ONLY used on first-time initialization"
+echo "   - Existing mongo_data volume means credentials are reused"
+echo "   - This is expected and SAFE during rollback"
 
-PREVIOUS_TAG=$((CURRENT_TAG - 1))
+echo "Stopping existing containers..."
+docker stop frontend backend mongodb 2>/dev/null || true
+docker rm frontend backend mongodb 2>/dev/null || true
 
-echo "Current tag : $CURRENT_TAG"
-echo "Previous tag: $PREVIOUS_TAG"
+echo "Starting MongoDB..."
+docker run -d \
+  --name mongodb \
+  --network app_net \
+  -v mongo_data:/data/db \
+  -v mongo_logs:/var/log/mongodb \
+  -e MONGO_INITDB_ROOT_USERNAME=${MONGO_USER} \
+  -e MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS} \
+  -e MONGO_INITDB_DATABASE=${MONGO_DB} \
+  mongo:7 \
+  --logpath /var/log/mongodb/mongod.log --logappend
 
-if [ "$PREVIOUS_TAG" -le 0 ]; then
-  echo "No previous version available, rollback skipped"
-  exit 0
-fi
-
-# ---------- VERIFY IMAGES ----------
-echo "Checking images..."
-
-docker image inspect frontend:$PREVIOUS_TAG >/dev/null 2>&1 || {
-  echo "ERROR: frontend:$PREVIOUS_TAG not found"
-  exit 1
-}
-
-docker image inspect backend:$PREVIOUS_TAG >/dev/null 2>&1 || {
-  echo "ERROR: backend:$PREVIOUS_TAG not found"
-  exit 1
-}
-
-# ---------- STOP FAILED CONTAINERS ----------
-echo "Stopping failed containers..."
-docker rm -f frontend backend || true
-
-# ---------- START BACKEND ----------
-echo "Starting backend rollback container..."
+echo "Starting backend:${LAST_SUCCESS}"
 docker run -d \
   --name backend \
-  -p 5003:5003 \
   --network app_net \
+  -p 5003:5003 \
   -e MONGO_HOST=mongodb \
   -e MONGO_PORT=27017 \
-  -e MONGO_USER="$MONGO_USER" \
-  -e MONGO_PASS="$MONGO_PASS" \
-  -e MONGO_DB="$MONGO_DB" \
-  backend:$PREVIOUS_TAG
+  -e MONGO_USER=${MONGO_USER} \
+  -e MONGO_PASS=${MONGO_PASS} \
+  -e MONGO_DB=${MONGO_DB} \
+  -v backend_logs:/app/logs \
+  backend:${LAST_SUCCESS}
 
-# ---------- START FRONTEND ----------
-echo "Starting frontend rollback container..."
+echo "Starting frontend:${LAST_SUCCESS}"
 docker run -d \
   --name frontend \
-  -p 80:80 \
   --network app_net \
-  frontend:$PREVIOUS_TAG
+  -p 80:80 \
+  -v frontend_access_logs:/var/log/nginx/access \
+  -v frontend_error_logs:/var/log/nginx/error \
+  frontend:${LAST_SUCCESS}
 
-echo "Rollback completed successfully at $(date)"
+echo "Rollback completed successfully to ${LAST_SUCCESS}"
 exit 0
