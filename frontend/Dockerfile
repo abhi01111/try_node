@@ -11,6 +11,8 @@ FROM nginx:1.26-alpine
 
 RUN apk update && apk upgrade --no-cache
 
+# RUN rm -rf /var/cache/apk/*
+
 COPY nginx.conf /etc/nginx/nginx.conf
 
 COPY --from=build /app/build /usr/share/nginx/html

@@ -13,6 +13,7 @@ RUN npm prune --omit=dev
 
 
 FROM node:20-alpine
+# RUN apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
 WORKDIR /app
 COPY --from=build /app /app
 
