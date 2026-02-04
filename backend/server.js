@@ -34,14 +34,14 @@ const User = mongoose.model("User", UserSchema);
 
 // --- Routes ---
 
-// ✅ Health check (FOR CURL / MONITORING)
+//  Health check (FOR CURL / MONITORING)
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
 // Root route
 app.get("/", (req, res) => {
-  res.json({ status: "Backend Running 👍" });
+  res.json({ status: "Backend Running " });
 });
 
 // Create user
@@ -80,7 +80,7 @@ app.get("/api/users", async (req, res) => {
 const PORT = process.env.NODE_PORT || 5003;
 
 app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(` Server running on port ${PORT}`)
 );
 
 
@@ -110,17 +110,17 @@ app.listen(PORT, () =>
 
 // // health check
 // app.get("/health", (req, res) => {
-//   res.json({ status: "Backend is running 🚀" });
+//   res.json({ status: "Backend is running " });
 // });
 
 // // db
 // mongoose
 //   .connect(process.env.MONGO_URI)
-//   .then(() => console.log("✅ MongoDB Connected"))
+//   .then(() => console.log("MongoDB Connected"))
 //   .catch(err => console.error(err));
 
 // // server
 // const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () =>
-//   console.log(`🚀 Server running on port ${PORT}`)
+//   console.log(` Server running on port ${PORT}`)
 // );
