@@ -13,19 +13,30 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build Images') {
-            steps {
-                script {
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}"
-
-                    sh '''
-                    echo "Building Frontend image..."
-                    docker build --no-cache -t frontend:${IMAGE_TAG} ./frontend
-
-                    echo "Building Backend image..."
-                    docker build --no-cache -t backend:${IMAGE_TAG} ./backend
-                '''
+            parallel{
+                stage('Build Frontend Image') {
+                    steps {
+                        script {
+                            env.IMAGE_TAG = "${BUILD_NUMBER}"
+                            sh '''
+                                echo "Build Frontend Image"
+                                docker build -t frontend:${IMAGE_TAG} ./frontend
+                            '''
+                        }
+                    }
+                }
+                stage('Build Backend Image') {
+                    steps {
+                        script {
+                            env.IMAGE_TAG = "${BUILD_NUMBER}"
+                            sh '''
+                                echo "Build Backend Image"
+                                docker build -t backend:${IMAGE_TAG} ./backend
+                            '''
+                        }
+                    }
                 }
             }
         }
@@ -46,12 +57,21 @@ pipeline {
         }
         
         stage('Package Docker Images ') {
-            steps {
-                sh '''
-                echo "Saving Docker images tar files"
-                docker save frontend:${IMAGE_TAG} -o frontend_${IMAGE_TAG}.tar
-                docker save backend:${IMAGE_TAG} -o backend_${IMAGE_TAG}.tar
-            '''
+            parallel {
+                stage('Save Frontend Image') {
+                    steps {
+                        sh '''
+                            docker save frontend:${IMAGE_TAG} -o frontend_${IMAGE_TAG}.tar
+                        '''
+                    }
+                }
+                stage('Save Backend Image') {
+                    steps {
+                        sh '''
+                            docker save backend:${IMAGE_TAG} -o backend_${IMAGE_TAG}.tar
+                        '''
+                    }
+                }
             }
         }
         
