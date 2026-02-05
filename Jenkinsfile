@@ -36,10 +36,10 @@ pipeline {
             }
             steps {
                 sh '''
-                echo "Scanning frontend image..."
+                echo "Scanning frontend image"
                 trivy image --severity HIGH,CRITICAL --exit-code 1 frontend:${IMAGE_TAG}
 
-                echo "Scanning backend image..."
+                echo "Scanning backend image"
                 trivy image --severity HIGH,CRITICAL --exit-code 1 backend:${IMAGE_TAG}
             '''
             }
@@ -48,7 +48,7 @@ pipeline {
         stage('Package Images') {
             steps {
                 sh '''
-                echo "Saving Docker images as tar files..."
+                echo "Saving Docker images as tar files"
                 docker save frontend:${IMAGE_TAG} -o frontend_${IMAGE_TAG}.tar
                 docker save backend:${IMAGE_TAG} -o backend_${IMAGE_TAG}.tar
             '''
@@ -68,11 +68,11 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                    echo "Copying frontend image..."
+                    echo "Copying frontend image"
                     scp -i $SSH_KEY frontend_${IMAGE_TAG}.tar \
                         $SSH_USER@${REMOTE_IP}:/opt/docker-images/
         
-                    echo "Copying backend image..."
+                    echo "Copying backend image"
                     scp -i $SSH_KEY backend_${IMAGE_TAG}.tar \
                         $SSH_USER@${REMOTE_IP}:/opt/docker-images/
                     '''
@@ -117,10 +117,10 @@ pipeline {
                     sh '''
                     ssh -i $SSH_KEY $SSH_USER@${REMOTE_IP} "
         
-                        echo 'Creating network if not exists...'
+                        echo 'Creating network if not exists'
                         docker network inspect app_net >/dev/null 2>&1 || docker network create app_net
         
-                        echo 'Creating volumes if not exists...'
+                        echo 'Creating volumes if not exists'
                         docker volume inspect frontend_access_logs >/dev/null 2>&1 || docker volume create frontend_access_logs
                         docker volume inspect frontend_error_logs  >/dev/null 2>&1 || docker volume create frontend_error_logs
                         docker volume inspect backend_logs         >/dev/null 2>&1 || docker volume create backend_logs
@@ -148,11 +148,11 @@ pipeline {
                     sh '''
                     ssh -i $SSH_KEY $SSH_USER@${REMOTE_IP} "
         
-                        echo 'Stopping old containers...'
+                        echo 'Stopping old containers'
                         docker stop frontend backend mongodb || true
                         docker rm frontend backend mongodb || true
         
-                        echo 'Starting MongoDB...'
+                        echo 'Starting MongoDB'
                         docker run -d \
                           --name mongodb \
                           --network app_net \
@@ -164,7 +164,7 @@ pipeline {
                           mongo:7 \
                           --logpath /var/log/mongodb/mongod.log --logappend
         
-                        echo 'Starting Backend...'
+                        echo 'Starting Backend'
                         docker run -d \
                           --name backend \
                           --network app_net \
@@ -177,7 +177,7 @@ pipeline {
                           -v backend_logs:/app/logs \
                           backend:${IMAGE_TAG}
         
-                        echo 'Starting Frontend...'
+                        echo 'Starting Frontend'
                         docker run -d \
                           --name frontend \
                           --network app_net \
