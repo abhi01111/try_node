@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 withCredentials([
                     string(credentialsId: 'github-repo-url', variable: 'GIT_URL')
