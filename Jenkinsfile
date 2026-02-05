@@ -14,7 +14,7 @@ pipeline {
             }
         }
         
-        stage('Docker Build') {
+        stage('Build Images') {
             steps {
                 script {
                     env.IMAGE_TAG = "${env.BUILD_NUMBER}"
@@ -30,32 +30,32 @@ pipeline {
             }
         }
         
-        stage('Trivy Scan') {
+        stage('Trivy Image Scan') {
             when {
                 expression { return params.RUN_TRIVY }
             }
             steps {
                 sh '''
-                echo "Scanning frontend image"
+                echo "Scanning frontend image using trivy"
                 trivy image --severity HIGH,CRITICAL --exit-code 1 frontend:${IMAGE_TAG}
 
-                echo "Scanning backend image"
+                echo "Scanning backend image using trivy"
                 trivy image --severity HIGH,CRITICAL --exit-code 1 backend:${IMAGE_TAG}
             '''
             }
         }
         
-        stage('Package Images') {
+        stage('Package Docker Images ') {
             steps {
                 sh '''
-                echo "Saving Docker images as tar files"
+                echo "Saving Docker images tar files"
                 docker save frontend:${IMAGE_TAG} -o frontend_${IMAGE_TAG}.tar
                 docker save backend:${IMAGE_TAG} -o backend_${IMAGE_TAG}.tar
             '''
             }
         }
         
-        stage('Copy Images to Remote') {
+        stage('Copy Images to Remote Server') {
             steps {
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'remote-ssh-key',
@@ -68,11 +68,11 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                    echo "Copying frontend image"
+                    echo "Copying frontend image to remote"
                     scp -i $SSH_KEY frontend_${IMAGE_TAG}.tar \
                         $SSH_USER@${REMOTE_IP}:/opt/docker-images/
         
-                    echo "Copying backend image"
+                    echo "Copying backend image to remote"
                     scp -i $SSH_KEY backend_${IMAGE_TAG}.tar \
                         $SSH_USER@${REMOTE_IP}:/opt/docker-images/
                     '''
@@ -80,7 +80,7 @@ pipeline {
             }
         }
         
-        stage('Load Images on Remote') {
+        stage('Load Images on Remote server') {
             steps {
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'remote-ssh-key',
@@ -102,7 +102,7 @@ pipeline {
             }
         }
 
-        stage('Create network and Volumes') {
+        stage('network and Volumes Infratructure management') {
             steps {
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'remote-ssh-key',
@@ -117,10 +117,10 @@ pipeline {
                     sh '''
                     ssh -i $SSH_KEY $SSH_USER@${REMOTE_IP} "
         
-                        echo 'Creating network if not exists'
+                        echo 'Creating network if not exists on remote server'
                         docker network inspect app_net >/dev/null 2>&1 || docker network create app_net
         
-                        echo 'Creating volumes if not exists'
+                        echo 'Creating volumes if not exists on remote server'
                         docker volume inspect frontend_access_logs >/dev/null 2>&1 || docker volume create frontend_access_logs
                         docker volume inspect frontend_error_logs  >/dev/null 2>&1 || docker volume create frontend_error_logs
                         docker volume inspect backend_logs         >/dev/null 2>&1 || docker volume create backend_logs
@@ -132,7 +132,7 @@ pipeline {
             }
         }
         
-        stage('Deploy') {
+        stage('Deploy on remote server') {
             steps {
                 withCredentials([
                     sshUserPrivateKey(
@@ -148,11 +148,11 @@ pipeline {
                     sh '''
                     ssh -i $SSH_KEY $SSH_USER@${REMOTE_IP} "
         
-                        echo 'Stopping old containers'
+                        echo 'Stopping old container'
                         docker stop frontend backend mongodb || true
                         docker rm frontend backend mongodb || true
         
-                        echo 'Starting MongoDB'
+                        echo 'Starting MongoDB container'
                         docker run -d \
                           --name mongodb \
                           --network app_net \
@@ -164,7 +164,7 @@ pipeline {
                           mongo:7 \
                           --logpath /var/log/mongodb/mongod.log --logappend
         
-                        echo 'Starting Backend'
+                        echo 'Starting Backend container'
                         docker run -d \
                           --name backend \
                           --network app_net \
@@ -177,7 +177,7 @@ pipeline {
                           -v backend_logs:/app/logs \
                           backend:${IMAGE_TAG}
         
-                        echo 'Starting Frontend'
+                        echo 'Starting Frontend container'
                         docker run -d \
                           --name frontend \
                           --network app_net \
