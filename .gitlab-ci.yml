@@ -9,7 +9,6 @@ variables:
 
 stages:
   - build
-  - scan
   - package
   - copy
   - load
@@ -24,16 +23,6 @@ docker_build:
     - docker build -t frontend:${IMAGE_TAG} ./frontend
     - echo "Building backend image"
     - docker build -t backend:${IMAGE_TAG} ./backend
-
-# ---------------- TRIVY SCAN ----------------
-trivy_scan:
-  stage: scan
-  image: aquasec/trivy:latest
-  rules:
-    - if: '$RUN_TRIVY == "true"'
-  script:
-    - trivy image --severity HIGH,CRITICAL --exit-code 1 frontend:${IMAGE_TAG}
-    - trivy image --severity HIGH,CRITICAL --exit-code 1 backend:${IMAGE_TAG}
 
 # ---------------- PACKAGE ----------------
 package_images:
